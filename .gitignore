@@ -30,3 +30,9 @@ datasets/
 
 # ---- 系统内产物 ----
 system/results/
+ws4/build/
+ws4/devel/
+ws4/src/
+ws5/build/
+ws5/devel/
+ws5/src/

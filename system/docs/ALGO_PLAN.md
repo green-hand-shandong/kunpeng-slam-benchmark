@@ -164,3 +164,19 @@ KISS-ICP 速度/工程性最佳（31ms/帧、pip 即用），FAST-LIO2 稳定成
 适配成本：Point-LIO ≈ 0（复用 fastlio 镜像+补 glog）；KISS-ICP ≈ 0（pip）；Cartographer 高（源码+配置考古）。
 
 待做：LIO-SAM（GTSAM aarch64 源码编译）、LeGO-LOAM（地面分割假设核对）。
+
+### 鲲鹏 920 多算法实测结果·第二批（2026-11-04 下午，kitti_0001 同口径）
+
+| 算法 | 路线 | 许可 | 关键帧 | 2D 路径 | ATE RMSE | 备注 |
+|---|---|---|---|---|---|---|
+| **LIO-SAM** | GTSAM 4.1.1 源码编译 + catkin | BSD-3 | 23 | 130.1m | **19.8m** | 因子图跑通；合成角速度 IMU 与其 9 轴高频预积分假设差距大，待调参（预期内） |
+| **LeGO-LOAM** | C++17 + OpenCV4 + GTSAM 导出 | BSD-3 | 27 | 9.5m | **1.445m** | 纯几何（弱 IMU）正常水平；HDL-64E 配置 N_SCAN=64/groundScanInd=30 |
+
+第二批适配坑（全部修复并留档）：
+- LIO-SAM：`opencv/cv.h`→`opencv2/opencv.hpp`（OpenCV4）；`-std=c++11`→`-std=c++17`（GCC9+PCL1.10）；
+  flann 1.9 serialization 对无 serialize 成员类型崩溃 → SFINAE fallback 补丁（容器内 /usr/include/flann/util/serialization.h）；
+  需要 gtsam_unstable（GTSAM 配置须开 BUILD_UNSTABLE=ON）；话题名 `/lio_sam/mapping/odometry_incremental`。
+- LeGO-LOAM：同样 OpenCV4 头 + C++17；utility.h 需 HDL-64E 参数；cloud_msgs 是独立包须一起入工作区；
+  imuTopic 改 `/kitti/oxts/imu`；bag 回放必须 `--clock`（use_sim_time）。
+
+**六算法总表**（+第一批）：见上表与第一批表。GTSAM 全家桶（LIO-SAM/LeGO-LOAM）在鲲鹏 920 完全可用。
