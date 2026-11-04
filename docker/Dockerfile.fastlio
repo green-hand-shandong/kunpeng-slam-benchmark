@@ -1,0 +1,29 @@
+# FAST-LIO 开发/运行镜像（ROS1 Noetic，aarch64/amd64 通用）
+# 注意：本机 daemon 配置的 registry-mirror 已失效（403），FROM 必须写全限定名走 DaoCloud
+# 构建: docker build -f Dockerfile.fastlio -t fastlio:noetic .
+FROM m.daocloud.io/docker.io/library/ros:noetic
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 换国内 apt 源（鲲鹏主机上拉包快）
+RUN sed -i 's@//.*archive.ubuntu.com@//mirrors.aliyun.com@g; s@//.*security.ubuntu.com@//mirrors.aliyun.com@g' /etc/apt/sources.list
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential cmake git ca-certificates \
+        libeigen3-dev libpcl-dev libopencv-dev libgomp1 \
+        ros-noetic-pcl-ros ros-noetic-pcl-msgs ros-noetic-pcl-conversions \
+        ros-noetic-nav-msgs ros-noetic-tf ros-noetic-tf2-ros \
+        ros-noetic-eigen-conversions ros-noetic-tf-conversions \
+        ros-noetic-tf2-sensor-msgs ros-noetic-tf2-geometry-msgs \
+        python3-numpy python3-rosbag \
+    && rm -rf /var/lib/apt/lists/*
+
+# Livox-SDK（livox_ros_driver 依赖其头文件/库）；源码由宿主机预先 clone 到 third_party，
+# 构建上下文为 slam/ 仓库根目录
+COPY third_party/Livox-SDK /tmp/Livox-SDK
+RUN cmake -S /tmp/Livox-SDK -B /tmp/Livox-SDK/build \
+    && cmake --build /tmp/Livox-SDK/build -j8 \
+    && cmake --install /tmp/Livox-SDK/build \
+    && rm -rf /tmp/Livox-SDK
+
+WORKDIR /root/ws
+CMD ["bash"]

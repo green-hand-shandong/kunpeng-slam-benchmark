@@ -1,0 +1,52 @@
+common:
+    lid_topic: "/velodyne_points"
+    imu_topic: "/kitti/oxts/imu"
+    con_frame: false
+    con_frame_num: 1
+    cut_frame: false
+    cut_frame_time_interval: 0.1
+    time_diff_lidar_to_imu: 0.0
+
+preprocess:
+    lidar_type: 2
+    scan_line: 64
+    timestamp_unit: 0        # 0-second（KITTI bag 的 time 字段是秒）
+    blind: 1.0
+
+mapping:
+    imu_en: true
+    extrinsic_est_en: false
+    imu_time_inte: 0.01      # = 1 / 100Hz
+    lidar_time_inte: 0.1
+    satu_acc: 30.0
+    satu_gyro: 35
+    acc_norm: 9.81
+    lidar_meas_cov: 0.01
+    acc_cov_output: 0.1
+    gyr_cov_output: 0.1
+    b_acc_cov: 0.0001
+    b_gyr_cov: 0.0001
+    imu_meas_acc_cov: 0.1
+    imu_meas_omg_cov: 0.1
+    gyr_cov_input: 0.01
+    acc_cov_input: 0.1
+    plane_thr: 0.1
+    match_s: 81
+    ivox_grid_resolution: 2.0
+    gravity: [0.0, 0.0, -9.810]
+    gravity_init: [0.0, 0.0, -9.810]
+    extrinsic_T: [ 0.810544, -0.307054, 0.802724]
+    extrinsic_R: [ 9.999976e-01, -7.553071e-04,  2.024406e-03,
+                   7.553071e-04,  9.998898e-01,  1.482454e-02,
+                  -2.035826e-03, -1.482298e-02,  9.998881e-01]
+
+odometry:
+    publish_odometry_without_downsample: false
+
+pcd_save:
+    pcd_save_en: true
+    interval: -1
+publish:
+    path_en: true
+    scan_publish_en: true
+    scan_bodyframe_pub_en: false

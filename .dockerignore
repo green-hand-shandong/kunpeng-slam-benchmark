@@ -1,0 +1,7 @@
+ws/build
+ws/devel
+ws/logs
+ws/src/FAST_LIO/Log
+ws/src/FAST_LIO/PCD
+third_party/kitti2bag
+docker

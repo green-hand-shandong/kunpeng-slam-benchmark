@@ -1,0 +1,32 @@
+# ---- 数据与大文件（不入库）----
+*.bag
+*.pcd
+*.pbstream
+*.zip
+*.npy
+*.npz
+*.bin
+
+# ---- 第三方源码与构建产物（各自有上游仓库）----
+third_party/
+ws/build/
+ws/devel/
+ws/src/
+ws2/build/
+ws2/devel/
+ws2/devel_carto/
+ws2/catkin_ws/
+ws2/src/
+ws3/
+
+# ---- 日志与临时 ----
+*.log
+Log/
+PCD/
+__pycache__/
+*.pyc
+results/
+datasets/
+
+# ---- 系统内产物 ----
+system/results/

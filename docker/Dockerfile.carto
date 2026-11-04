@@ -1,0 +1,10 @@
+# Cartographer 构建镜像（Apache-2.0；基于 fastlio:noetic 追加依赖）
+FROM fastlio:noetic
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ninja-build libboost-all-dev libgflags-dev libgoogle-glog-dev \
+        libatlas-base-dev libsuitesparse-dev libprotobuf-dev protobuf-compiler \
+        libceres-dev liblua5.3-dev libcairo2-dev ros-noetic-pcl-conversions \
+        ros-noetic-message-filters ros-noetic-nav-msgs ros-noetic-tf2-ros \
+        ros-noetic-tf2-sensor-msgs ros-noetic-urdf \
+    && rm -rf /var/lib/apt/lists/*

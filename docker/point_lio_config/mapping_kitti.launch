@@ -1,0 +1,7 @@
+<launch>
+  <arg name="rviz" default="false" />
+  <node pkg="point_lio" type="pointlio_mapping" name="pointlio_mapping" output="screen" >
+    <rosparam command="load" file="$(find point_lio)/config/kitti.yaml" />
+    <param name="pcd_save/pcd_save_en" type="bool" value="true" />
+  </node>
+</launch>

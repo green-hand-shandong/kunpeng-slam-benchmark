@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>多传感器激光惯性定位建图与三维轨迹评估软件 V1.0</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231667d9'/%3E%3Cpath d='M8 22 L16 8 L24 22' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='20' r='2.4' fill='%23ffd43b'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#f4f8fd;--bg2:#ffffff;--bd:#cfe0f2;--fg:#16324f;--mut:#5b7290;--bl:#1667d9;--gr:#189d5a;--rd:#d64541}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;font-family:system-ui,"Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg)}
+#app{display:flex;height:100%}
+#nav{width:190px;background:var(--bg2);border-right:1px solid var(--bd);padding:12px 0;flex-shrink:0;display:flex;flex-direction:column}
+#nav h1{font-size:13px;padding:0 14px 10px;margin:0;color:var(--mut);border-bottom:1px solid var(--bd)}
+#nav a{padding:9px 16px;color:var(--fg);text-decoration:none;font-size:13px;cursor:pointer;border-left:3px solid transparent}
+#nav a.on{background:#e8f1fd;border-left-color:var(--bl)}
+#nav a:hover{background:#e8f1fd}
+#nav .foot{margin-top:auto;padding:10px 14px;font-size:11px;color:var(--mut);border-top:1px solid var(--bd)}
+#main{flex:1;overflow:auto;padding:18px 22px;position:relative}
+#ws-wrap{position:absolute;inset:0;display:none}
+#gl{width:100%;height:100%;display:block;cursor:grab}
+.page{max-width:1100px}
+h2{font-size:17px;margin:4px 0 14px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border:1px solid var(--bd);padding:6px 10px;text-align:left}
+th{background:var(--bg2);color:var(--mut);font-weight:600}
+tbody tr:hover,table tr:hover td{background:#f0f6fd}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:14px 16px;margin-bottom:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:14px}
+.card .k{color:var(--mut);font-size:12px}.card .v{font-size:22px;font-weight:700;margin-top:4px}
+select,input,button,textarea{background:#ffffff;color:var(--fg);border:1px solid var(--bd);border-radius:6px;padding:6px 10px;font-size:13px;transition:border-color .15s, box-shadow .15s}
+select:focus,input:focus,textarea:focus{outline:none;border-color:var(--bl);box-shadow:0 0 0 3px rgba(22,103,217,.12)}
+button:not(:disabled):hover{filter:brightness(1.06);cursor:pointer}
+a{color:var(--bl);text-decoration:none}
+a:hover{text-decoration:underline}
+button.primary{background:var(--bl);border-color:var(--bl);color:#fff;cursor:pointer}color:#fff;
+button.danger{background:var(--rd);border-color:var(--rd);cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+.ok{color:#3fb950}.bad{color:#f85149}.mut{color:var(--mut)}
+pre{background:#f3f8fe;border:1px solid var(--bd);border-radius:8px;padding:10px;font-size:12px;overflow:auto;max-height:60vh;white-space:pre-wrap}
+.bar{height:8px;background:#e3edf9;border-radius:4px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--bl)}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;background:#e3edf9;color:#3a5a80}
+.badge.plan{background:#3d2e00;color:#d29922}
+#hud{position:fixed;left:206px;bottom:12px;background:rgba(255,255,255,.94);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;font-size:12px;line-height:1.7;z-index:5;display:none;box-shadow:0 2px 10px rgba(22,80,160,.12)}
+#jobbar{position:fixed;right:12px;bottom:12px;width:400px;max-height:45%;overflow:auto;background:rgba(255,255,255,.96);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;font-size:12px;white-space:pre-wrap;z-index:6;display:none;box-shadow:0 2px 10px rgba(22,80,160,.12)}
+.navgroup{padding:8px 16px 2px;font-size:11px;color:var(--mut);letter-spacing:1px}
+@media (max-width:900px){
+  #app{flex-direction:column}
+  #nav{width:100%;display:flex;overflow-x:auto;padding:6px;border-right:none;border-bottom:1px solid var(--bd)}
+  #nav h1{display:none}
+  #nav a{white-space:nowrap;border-left:none;border-bottom:3px solid transparent;padding:7px 10px}
+  #nav a.on{border-bottom-color:var(--bl);background:#e8f1fd}
+  #nav .navgroup,#nav .foot{display:none}
+  #main{padding:12px}
+}
+canvas.plot{background:#eef5fd;border:1px solid var(--bd);border-radius:8px;width:100%}
+body.login-mode #nav{display:none}
+body.login-mode #main{display:flex;align-items:center;justify-content:center;overflow:hidden}
+body.login-mode #page{max-width:none;padding:0}
+#login-box{width:370px;background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:34px 30px;box-shadow:0 6px 30px rgba(22,80,160,.14)}
+#login-box h2{margin:0 0 6px;font-size:19px;line-height:1.45}
+#login-box .sub{color:var(--mut);font-size:12px;margin-bottom:22px}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="nav">
+  <h1>三维激光惯性SLAM<br>建图与轨迹评估软件 V1.0</h1>
+  <a href="#/overview">系统总览</a>
+  <div class="navgroup">数据</div>
+  <a href="#/datasets">数据集管理</a>
+  <div class="navgroup">运行与分析</div>
+  <a href="#/jobs">建图任务</a>
+  <a href="#/workspace">三维建图工作台</a>
+  <a href="#/config">算法配置</a>
+  <a href="#/eval">轨迹质量评估</a>
+  <a href="#/experiments">实验管理</a>
+  <div class="navgroup">系统</div>
+  <a href="#/logs">运行日志</a>
+  <a href="#/loop">闭环分析 <span class="badge">候选检测已实现</span></a>
+  <a href="#/users">用户与权限</a>
+  <a href="#/about">关于软件</a>
+  <a href="#" id="logout">退出登录</a>
+  <div class="foot">FAST-LIO2 容器隔离运行<br>自研：数据适配·评估·可视化<br><span id="nav-me" class="mut"></span></div>
+</aside>
+<main id="main">
+  <div id="ws-wrap"><canvas id="gl"></canvas>
+    <div id="ws-empty" style="position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--mut);text-align:center">
+      <div style="font-size:18px">该数据集还没有建图结果</div>
+      <div>选择数据集后点击上方「开始重建」，完成后自动显示三维地图</div>
+    </div>
+    <div style="position:fixed;top:12px;left:206px;z-index:5;display:flex;gap:8px;align-items:center">
+      <select id="ds"></select>
+      <button class="primary" id="btn">开始重建</button>
+      <button id="loadbtn">加载已有地图</button>
+      <span style="border-left:1px solid var(--bd);padding-left:10px"></span>
+      <button onclick="setView('top')">俯视</button>
+      <button onclick="setView('side')">侧视</button>
+      <button onclick="setView('free')">自由</button>
+      <label style="font-size:12px">点大小 <input type="range" id="psz" min="0.6" max="4" step="0.2" value="1.6" style="width:90px;vertical-align:middle" oninput="PAGE_STATE.psz=parseFloat(this.value)"></label>
+      <span id="msg" class="mut"></span>
+    </div>
+    <div id="hud"></div>
+  </div>
+  <div id="page" class="page"></div>
+  <div id="jobbar"></div>
+</main>
+</div>
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const esc=s=>String(s??"").replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]));
+async function api(path,opt){const r=await fetch(path,opt);
+  if(r.status===401 && !path.startsWith("/api/auth")){if(location.hash!=="#/login")location.hash="#/login";throw {error:"未登录",status:401};}
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(j,{status:r.status});return j;}
+
+/* ============ 三维工作台（手写 WebGL，无依赖） ============ */
+const cv=$("#gl");const gl=cv.getContext("webgl",{antialias:true});
+if(!gl){document.body.innerHTML="<div style='color:#16324f;background:#f4f8fd;height:100%;display:flex;align-items:center;justify-content:center'>当前浏览器不支持 WebGL，无法使用三维工作台；其余页面仍可在控制台错误排除后访问</div>";throw new Error("no webgl");}
+function perspective(fov,asp,n,f){const t=1/Math.tan(fov/2),d=1/(n-f);
+  return new Float32Array([t/asp,0,0,0,0,t,0,0,0,0,(n+f)*d,-1,0,0,2*n*f*d,0]);}
+function lookAt(e,c,u){const z=norm3(sub3(e,c)),x=norm3(cross3(u,z)),y=cross3(z,x);
+  return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-dot3(x,e),-dot3(y,e),-dot3(z,e),1]);}
+function mul(a,b){const o=new Float32Array(16);for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+j]*b[i*4+k];o[i*4+j]=s;}return o;}
+const sub3=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const cross3=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const norm3=v=>{const l=Math.hypot(...v)||1;return[v[0]/l,v[1]/l,v[2]/l];};
+const VS=`attribute vec3 p;uniform mat4 mvp;uniform float psz;varying float t;uniform vec2 zr;
+void main(){gl_Position=mvp*vec4(p,1.);t=clamp((p.z-zr.x)/max(zr.y-zr.x,.001),0.,1.);gl_PointSize=psz;}`;
+const FS=`precision mediump float;varying float t;
+vec3 grad(float x){vec3 c0=vec3(.19,.07,.66),c1=vec3(.13,.66,.87),c2=vec3(.13,.87,.44),c3=vec3(.93,.81,.15),c4=vec3(.79,.12,.05);
+if(x<.25)return mix(c0,c1,x/.25);if(x<.5)return mix(c1,c2,(x-.25)/.25);if(x<.75)return mix(c2,c3,(x-.5)/.25);return mix(c3,c4,(x-.75)/.25);}
+void main(){gl_FragColor=vec4(grad(t),1.);}`;
+const FSR=`precision mediump float;void main(){gl_FragColor=vec4(.84,.19,.16,1.);}`;
+function mkprog(fs,vs){const P=gl.createProgram();for(const[t,s]of[["v",vs],["f",fs]]){const sh=gl.createShader(t==="v"?gl.VERTEX_SHADER:gl.FRAGMENT_SHADER);gl.shaderSource(sh,s);gl.compileShader(sh);gl.attachShader(P,sh);}gl.linkProgram(P);return P;}
+const pPts=mkprog(FS,VS),pLine=mkprog(FSR,VS);
+const uP={mvp:gl.getUniformLocation(pPts,"mvp"),zr:gl.getUniformLocation(pPts,"zr"),psz:gl.getUniformLocation(pPts,"psz")};
+const uL={mvp:gl.getUniformLocation(pLine,"mvp"),zr:gl.getUniformLocation(pLine,"zr"),psz:gl.getUniformLocation(pLine,"psz")};
+const cam={yaw:-0.9,pitch:-0.45,dist:700,target:[250,0,20]};
+let drag=null;
+cv.onmousedown=e=>drag={x:e.clientX,y:e.clientY,btn:e.button,shift:e.shiftKey};
+window.onmouseup=()=>drag=null;
+window.onmousemove=e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
+if(drag.btn===0&&!drag.shift){cam.yaw+=dx*.005;cam.pitch=Math.min(1.5,Math.max(-1.5,cam.pitch+dy*.005));}
+else{const s=cam.dist*.0016,cp=Math.cos(cam.pitch);
+const f=[-cp*Math.cos(cam.yaw),-cp*Math.sin(cam.yaw),Math.sin(cam.pitch)],r=[-Math.sin(cam.yaw),Math.cos(cam.yaw),0];
+cam.target[0]+=(f[0]*dy+r[0]*dx)*s;cam.target[1]+=(f[1]*dy+r[1]*dx)*s;cam.target[2]+=f[2]*dy*s;}};
+cv.oncontextmenu=e=>e.preventDefault();
+cv.addEventListener("wheel",e=>{e.preventDefault();cam.dist*=Math.pow(1.0015,e.deltaY);},{passive:false});
+let mapBuf=null,mapN=0,zr=[0,1],trajBuf=null,trajN=0,fpsV=0,fN=0;
+function resize(){cv.width=cv.clientWidth*devicePixelRatio;cv.height=cv.clientHeight*devicePixelRatio;gl.viewport(0,0,cv.width,cv.height);}
+function draw(){if($("#ws-wrap").style.display!=="none"){
+  if(cv.clientWidth&&cv.height&&(cv.width!==cv.clientWidth*devicePixelRatio))resize();
+  gl.clearColor(.955,.97,1,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);
+  const mvp=mul(perspective(.9,cv.width/cv.height,.5,9000),lookAt(
+    [cam.target[0]+cam.dist*Math.cos(cam.pitch)*Math.cos(cam.yaw),cam.target[1]+cam.dist*Math.cos(cam.pitch)*Math.sin(cam.yaw),cam.target[2]+cam.dist*Math.sin(-cam.pitch)],cam.target,[0,0,1]));
+  if(mapBuf){gl.useProgram(pPts);gl.uniformMatrix4fv(uP.mvp,false,mvp);gl.uniform2f(uP.zr,zr[0],zr[1]);gl.uniform1f(uP.psz,PAGE_STATE.psz||1.6);
+    gl.bindBuffer(gl.ARRAY_BUFFER,mapBuf);
+    const p=gl.getAttribLocation(pPts,"p");gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,3,gl.FLOAT,false,16,0);
+    gl.drawArrays(gl.POINTS,0,mapN);}
+  if(trajBuf){gl.useProgram(pLine);gl.uniformMatrix4fv(uL.mvp,false,mvp);gl.uniform2f(uL.zr,0,1);gl.uniform1f(uL.psz,2.5);
+    gl.bindBuffer(gl.ARRAY_BUFFER,trajBuf);
+    const p=gl.getAttribLocation(pLine,"p");gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,3,gl.FLOAT,false,12,0);
+    gl.drawArrays(gl.LINE_STRIP,0,trajN);}
+  fN++;
+}requestAnimationFrame(draw);}
+setInterval(()=>{fpsV=fN*2;fN=0;const el=document.getElementById("fps");if(el)el.textContent=fpsV;},500);
+requestAnimationFrame(draw);
+
+async function loadDatasetsSelect(){
+  const d=await api("/api/datasets");
+  $("#ds").innerHTML=d.map(v=>`<option value="${esc(v.tag)}">${esc(v.tag)} — ${esc(v.name)}${v.has_map?" ✅":""}</option>`).join("");
+  if(PAGE_STATE.ds && d.some(v=>v.tag===PAGE_STATE.ds)) $("#ds").value=PAGE_STATE.ds;
+  if(mapN>0 && PAGE_STATE.dsLoaded===$("#ds").value){
+    $("#hud").style.display="block";
+    $("#hud").innerHTML=`已保留上次加载的地图（${mapN.toLocaleString()} 点）· 左键旋转 滚轮缩放 右键平移<br>FPS: <span id="fps">-</span>`;
+    return;
+  }
+  $("#ds").onchange=()=>{ $("#ws-empty").style.display="flex";
+    $("#hud").innerHTML="已选择数据集，可「加载已有地图」或「开始重建」"; $("#hud").style.display="block"; };
+  PAGE_STATE.ds=$("#ds").value;
+  $("#ws-empty").style.display="flex";
+  $("#hud").style.display="block";
+  $("#hud").innerHTML="选择数据集后：加载已有地图，或开始重建";
+}
+async function loadMap(tag){
+  $("#ws-empty").style.display="none";
+  $("#loading")||document.body.insertAdjacentHTML("beforeend",'<div id="loading" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(244,248,253,.75);z-index:9;color:var(--fg)">加载点云…</div>');
+  $("#loading").style.display="flex";
+  try{
+    const stats=await api("/api/stats/"+tag);
+    if(!stats.map_points)throw 0;
+    const r=await fetch("/api/map/"+tag);if(!r.ok||seq!==mapSeq)throw 0;
+    const buf=await r.arrayBuffer();
+    mapBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,mapBuf);gl.bufferData(gl.ARRAY_BUFFER,buf,gl.STATIC_DRAW);
+    mapN=Math.floor(buf.byteLength/16);
+    const meta=JSON.parse(r.headers.get("X-Meta")||"{}");zr=[meta.zmin??0,meta.zmax??1];
+    const t=await api("/api/traj/"+tag);
+    trajBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,trajBuf);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(t.points.flat()),gl.STATIC_DRAW);trajN=t.points.length;
+    const xs=t.points.map(p=>p[0]),ys=t.points.map(p=>p[1]);
+    cam.target=[(Math.min(...xs)+Math.max(...xs))/2,(Math.min(...ys)+Math.max(...ys))/2,10];
+    cam.dist=Math.max(120,(Math.max(...xs)-Math.min(...xs)))*1.3;
+    const ev=stats.evaluation&&stats.evaluation.ate||{};
+    const tim=stats.timing||{};
+    $("#hud").style.display="block";
+    $("#hud").innerHTML=`数据集 <b>${tag}</b> ${stats.run_id?`<span class="mut">(run ${stats.run_id})</span>`:""}<br>
+地图点(渲染/总量): ${meta.points_served.toLocaleString()} / ${stats.map_points.toLocaleString()}<br>
+轨迹: ${t.count} 帧 / ${t.length_m} m<br>
+逐帧耗时: ${tim.total_ms_mean?tim.total_ms_mean+" ms (中位 "+tim.total_ms_median+" ms)":"-"}<br>
+ATE RMSE: ${ev.ate_rmse!=null?ev.ate_rmse+" m":"未评估"} <span class="mut">(GPS/INS 参考)</span><br>
+FPS: <span id="fps">-</span> <span class="mut">左键旋转 滚轮缩放 右键平移</span>`;
+  }catch(e){$("#hud").style.display="block";
+    $("#ws-empty").style.display="flex";
+    $("#hud").innerHTML=`数据集 <b>${tag}</b> 暂无建图结果，点击「开始重建」`;}
+  $("#loading").style.display="none";
+}
+$("#loadbtn").onclick=()=>{PAGE_STATE.dsLoaded=$("#ds").value;loadMap($("#ds").value);};
+window.setView=m=>{
+  if(m==="top"){cam.pitch=-1.45;cam.dist*= (cam.dist<400?1:0.98);}
+  else if(m==="side"){cam.pitch=0.05;}
+  else{cam.pitch=-0.45;}
+};
+window.setView=(window.setView||((m)=>{}));
+$("#btn").onclick=async()=>{
+  const tag=$("#ds").value;
+  $("#btn").disabled=true; $("#btn").textContent="重建中…";
+  const restore=()=>{$("#btn").disabled=false;$("#btn").textContent="开始重建";};
+  const cfg=JSON.parse(localStorage.getItem("slam_cfg")||"{}");
+  try{
+    const r=await api("/api/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({dataset:tag,config:cfg})});
+    watchJob(r.job,()=>{PAGE_STATE.dsLoaded=tag;loadMap(tag);});
+  }catch(e){$("#msg").textContent=e.error||"启动失败";restore();}
+}
+let watchTimer=null;
+function watchJob(id,onDone){
+  $("#jobbar").style.display="block";$("#btn")&&($("#btn").disabled=true);
+  if(watchTimer)clearInterval(watchTimer);
+  watchTimer=setInterval(async()=>{
+    const j=await api("/api/jobs/"+id);
+    let pct="";
+    try{const dsets=await api("/api/datasets");const d0=dsets.find(x=>x.tag===j.dataset);
+      if(d0&&j.status==="running"){const exp=d0.duration/( parseFloat((j.config&&JSON.parse(j.config||"{}").play_rate))||0.5 )+20;
+        pct=" ~"+Math.min(99,Math.round(j.elapsed/exp*100))+"%";}}catch(_){}
+    $("#msg").textContent=`任务 ${id}: ${j.status} ${j.elapsed?j.elapsed+"s":""}${pct}`;
+    $("#jobbar").textContent=(j.log||[]).join("\n")||j.status;
+    if(["done","failed"].includes(j.status)){
+      clearInterval(watchTimer);
+      if($("#btn")){$("#btn").disabled=false;$("#btn").textContent="开始重建";}
+      $("#msg").textContent=j.status==="done"?"重建完成":"重建失败";
+      setTimeout(()=>$("#jobbar").style.display="none",6000);
+      if(j.status==="done"&&onDone)onDone();
+    }
+  },2000);
+}
+
+/* ============ 路由与页面 ============ */
+const routes={};
+const PAGE_STATE={};   // 页面状态缓存：切页保留表单/选择/过滤
+let mapSeq=0;
+routes.login=()=>{
+  $("#page").style.display="block";$("#ws-wrap").style.display="none";
+  $("#page").innerHTML=`<div id="login-box">
+  <h2>多传感器激光惯性定位建图<br>与三维轨迹评估软件</h2>
+  <div class="sub">3D LiDAR-Inertial SLAM · Mapping &amp; Trajectory Evaluation · V1.0</div>
+  <div style="display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:center">
+    <span>用户名</span><input id="lg-u" autocomplete="username">
+    <span>密码</span><input id="lg-p" type="password" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter')doLogin()">
+  </div>
+  <p style="margin-top:18px"><button class="primary" style="width:100%;padding:9px" onclick="doLogin()">登 录</button></p>
+  <p id="lg-msg" class="mut" style="min-height:18px;margin:0"></p>
+  <p class="mut" style="font-size:11px;margin:14px 0 0">账号由系统管理员分配 · 首次部署后请修改初始密码</p>
+</div>`;
+};
+routes.login.doLogin=async()=>{
+  try{
+    await api("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username:$("#lg-u").value,password:$("#lg-p").value})});
+    $("#lg-msg").textContent="成功，跳转…"; await boot(); location.hash="#/overview"; route();
+  }catch(e){$("#lg-msg").innerHTML=`<span class="bad">${esc(e.error||"登录失败")}</span>`;}
+};
+window.doLogin=()=>routes.login.doLogin();
+let ME=null;
+async function boot(){
+  try{ ME=await api("/api/auth/me"); }
+  catch(e){ ME=null; }
+  const nu=document.getElementById("nav-users");
+  if(nu) nu.style.display = (ME && ME.role==="admin") ? "" : "none";
+  const nm=document.getElementById("nav-me");
+  if(nm) nm.textContent = ME ? `${ME.username}（${ME.role}）` : "未登录";
+}
+const _logoutEl=document.getElementById("logout");
+if(_logoutEl) _logoutEl.onclick=async e=>{
+  e.preventDefault();
+  try{ await fetch("/api/auth/logout",{method:"POST"}); }catch(_){}
+  ME=null; const nm=document.getElementById("nav-me"); if(nm) nm.textContent="未登录";
+  location.hash="#/login"; route();
+};
+function page(html){$("#page").style.display="block";$("#ws-wrap").style.display="none";$("#page").innerHTML=html;window.scrollTo(0,0);}
+function tbl(head,rows){
+  if(!Array.isArray(rows)) return `<pre class="bad">table rows 异常: ${esc(String(rows).slice(0,120))}</pre>`;
+  return `<table><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr>${rows.map(r=>`<tr>${(Array.isArray(r)?r:[r]).map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</table>`;}
+
+routes.overview=async()=>{
+  const o=await api("/api/overview");
+  if(!routes.overview._timer) routes.overview._timer=setInterval(()=>{
+    if(location.hash.split("?")[0]==="#/overview"&&!document.hidden) route();
+  },5000);
+  const mods=Object.entries(o.modules).map(([k,v])=>`<tr><td>${k}</td><td class="${String(v).includes("规划")?"mut":"ok"}">${v}</td></tr>`);
+  const diskPct = Math.round(100*o.system.disk_data0_used_gb/o.system.disk_data0_total_gb);
+  const diskCls = diskPct>=90? 'bad' : diskPct>=85? '' : 'ok';
+  const diskColor = diskPct>=90? 'var(--rd)' : diskPct>=85? '#d29922' : 'var(--gr)';
+  page(`<h2>系统总览 <span class="mut" style="font-size:12px;font-weight:400">● 5s 自动刷新</span></h2>
+<div class="cards">
+ <div class="card"><div class="k">数据集</div><div class="v">${o.datasets}</div></div>
+ <div class="card"><div class="k">建图实验(成功/总)</div><div class="v">${o.runs_done} / ${o.runs_total}</div></div>
+ <div class="card"><div class="k">CPU (${o.system.cpu_cores} 核)</div><div class="v">${o.system.cpu_percent??"-"}%</div>
+   <div class="bar"><i style="width:${o.system.cpu_percent??0}%"></i></div></div>
+ <div class="card"><div class="k">内存</div><div class="v">${o.system.mem_used_gb} / ${o.system.mem_total_gb} GB</div>
+   <div class="bar"><i style="width:${100*o.system.mem_used_gb/o.system.mem_total_gb}%"></i></div></div>
+ <div class="card"><div class="k">数据盘 /data0（${diskPct}%）</div><div class="v" style="color:${diskColor}">${o.system.disk_data0_used_gb} / ${o.system.disk_data0_total_gb} GB</div>
+   <div class="bar"><i style="width:${diskPct}%;background:${diskColor}"></i></div></div>
+</div>
+<div class="card"><b>FAST-LIO2</b> <code>${esc((o.fastlio||"").split(" ")[0])}</code>（GPL-2.0，容器隔离运行）
+&nbsp;|&nbsp; 参考：KITTI OXTS GPS/INS &nbsp;|&nbsp; 闭环：V2.0 规划</div>
+<h3>模块状态</h3>${tbl(["模块","状态"],mods)}`) ;
+};
+
+routes.datasets=async()=>{
+  const d=await api("/api/datasets");
+  page(`<h2>数据集管理</h2>
+<div class="card"><b>已注册数据集</b>${tbl(["tag","名称","帧数","时长(s)","bag","参考轨迹","操作"],
+  d.map(v=>[v.tag,esc(v.name),v.frames,v.duration,`${(v.bag_size/1e6).toFixed(0)} MB`,
+    v.has_ref?'<span class="ok">有</span>':'<span class="bad">无</span>',
+    `<button onclick="doValidate('${v.tag}',this)">校验</button>`]))}</div>
+<div id="vres"></div>
+<div class="card"><b>导入本地 KITTI Raw 数据集</b>（服务器路径）
+ <p style="font-size:12px" class="mut">目录结构要求：sync_dir/velodyne_points/{data/*.bin,timestamps.txt}，oxts_dir/data/*.txt，bag 为转换后的 rosbag</p>
+ <div style="display:grid;grid-template-columns:110px 1fr;gap:8px;max-width:760px">
+  <span>tag</span><input id="i-tag" placeholder="如 0020" oninput="PAGE_STATE['i-tag']=this.value">
+  <span>名称</span><input id="i-name" oninput="PAGE_STATE['i-name']=this.value">
+  <span>sync_dir</span><input id="i-sync" placeholder="/data0/slam-datasets/kitti/2011_09_30/2011_09_30_drive_0020_sync" oninput="PAGE_STATE['i-sync']=this.value">
+  <span>oxts_dir</span><input id="i-oxts" placeholder="…/2011_09_30_drive_0020_extract/oxts (100Hz)" oninput="PAGE_STATE['i-oxts']=this.value">
+  <span>bag</span><input id="i-bag" placeholder="/data0/slam-datasets/kitti/kitti_0020.bag" oninput="PAGE_STATE['i-bag']=this.value">
+ </div>
+ <p><button class="primary" onclick="doImport()">导入（自动校验）</button> <span id="imp-msg" class="mut"></span></p></div>`);
+  for(const id of ["i-tag","i-name","i-sync","i-oxts","i-bag"]){
+    const el=document.getElementById(id);
+    if(el&&PAGE_STATE[id]!==undefined) el.value=PAGE_STATE[id];
+  }
+};
+routes.datasets.doValidate=async(tag,btn)=>{
+  btn=btn||null;
+  if(btn) btn.disabled=true;
+  try{
+  const r=await api("/api/datasets/validate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({dataset:tag})});
+  $("#vres").innerHTML=`<div class="card"><b>校验报告：${esc(tag)}</b> ${r.passed?'<span class="ok">全部通过</span>':'<span class="bad">存在未通过项</span>'}
+  ${tbl(["检查项","结果","详情"],r.checks.map(c=>[esc(c.item),c.ok?'<span class="ok">通过</span>':'<span class="bad">未通过</span>',esc(c.detail)]))}</div>`;
+  }catch(e){ $("#vres").innerHTML=`<div class="card"><span class="bad">校验失败：${esc(e.error||e.detail||e.message)}</span></div>`; }
+  finally{ if(btn) btn.disabled=false; }
+};
+routes.datasets.doImport=async()=>{
+  $("#imp-msg").textContent="导入中…";
+  try{
+    const r=await api("/api/datasets/import",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({tag:$("#i-tag").value,name:$("#i-name").value,sync_dir:$("#i-sync").value,oxts_dir:$("#i-oxts").value,bag:$("#i-bag").value})});
+    $("#imp-msg").innerHTML=`<span class="ok">成功：${r.frames} 帧 / ${r.oxts_packets} 包 IMU</span>`;routes.datasets();
+  }catch(e){$("#imp-msg").innerHTML=`<span class="bad">${esc((e.errors||[]).join("; ")||e.error)}</span>`;}
+};
+
+routes.jobs=async()=>{
+  const runs=await api("/api/runs");
+  const live=(await api("/api/jobs")).filter(j=>["running","pending","stopping"].includes(j.status));
+  page(`<h2>建图任务</h2>
+<div class="card"><b>正在运行</b><div id="live">${live.length? live.map(j=>`${j.id} — ${esc(j.dataset)} — ${j.status} ${j.elapsed??""}s`).join("<br>") : '<span class="mut">无</span>'}</div>
+<p class="mut">提示：到「三维建图工作台」选择数据集并点击开始重建。</p></div>
+<h3>实验历史</h3>${tbl(["run","数据集","状态","开始时间","耗时(s)","ATE RMSE(m)","操作"],
+  runs.map(r=>[r.id,r.dataset,
+    `<span class="${r.status==="done"?"ok":r.status==="failed"?"bad":"mut"}">${r.status}</span>`,
+    new Date(r.started*1000).toLocaleString(),r.duration_s??"-",
+    r.odom_rows!=null?`${r.odom_rows}帧`:r.play_rate?`rate ${r.play_rate}`:"-",
+    r.ate_rmse!=null?`${r.ate_rmse} (${r.ate_pairs??"-"})`:"-",
+    `<a href="#/logs?run=${r.id}">日志</a> ${r.status==="done"?`<a href="#/eval?run=${r.id}">评估</a> <a href="/api/runs/${r.id}/report.html" target="_blank">报告</a>`:`${r.error==="map.pcd 未更新（可能建图失败）"||true?`<button onclick="retryRun('${r.id}')">重试</button>`:""}<span class="mut"> ${esc((r.error||"").slice(0,20))}</span>`}`]))}`);
+window.retryRun=async id=>{
+  const r=await (await fetch("/api/runs/"+id)).json();
+  const cfg=JSON.parse(r.metrics||"{}").config||{};
+  try{
+    const j=await api("/api/jobs",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({dataset:r.dataset,config:cfg})});
+    location.hash="#/workspace";
+  }catch(e){alert(e.error||e.detail||"重试失败");}
+};
+};
+
+routes.workspace=async()=>{
+  $("#page").style.display="none";$("#ws-wrap").style.display="block";resize();
+  await loadDatasetsSelect();
+};
+routes.workspace.leave=()=>{$("#ws-wrap").style.display="none";};
+
+routes.config=async()=>{
+  const c=await api("/api/config");
+  const saved=JSON.parse(localStorage.getItem("slam_cfg")||"{}");
+  const rows=Object.entries(c.defaults).map(([k,s])=>{
+    const v=saved[k]??s.value;
+    return [k, `<input id="cf-${k}" type="number" step="any" value="${v}" min="${s.min}" max="${s.max}" style="width:90px">`,
+      `[${s.min}, ${s.max}]`, esc(s.desc)];
+    });
+  page(`<h2>算法配置</h2>
+<div class="card">${tbl(["参数","值","范围","说明"],rows)}
+<p><button class="primary" onclick="saveCfg()">校验并保存（作用于下一次重建）</button>
+<button onclick="localStorage.removeItem('slam_cfg');route()">恢复默认</button>
+<span id="cfg-msg"></span></p>
+<p class="mut">保存后的配置随每次实验写入数据库（runs.config），用于实验对比与复现。固定项：HDL-64E 64线/10Hz、timestamp_unit=秒、外参取自 calib_imu_to_velo 求逆。</p></div>
+<h3>当前生效配置文件</h3><pre id="cfg-file">读取中…</pre>`);
+  try{const f=await fetch("/api/config/file");$("#cfg-file").textContent=await f.text();}catch(e){$("#cfg-file").textContent="(读取失败)";}
+};
+routes.config.saveCfg=async()=>{
+  const cfg={};$$("#page input[id^=cf-]").forEach(i=>cfg[i.id.slice(3)]=i.value);
+  const r=await api("/api/config/validate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cfg)});
+  $("#cfg-msg").innerHTML=r.valid?'<span class="ok">校验通过，已保存</span>':`<span class="bad">${esc(r.errors.join("; "))}</span>`;
+  if(r.valid)localStorage.setItem("slam_cfg",JSON.stringify(r.config));
+};
+
+routes.eval=async()=>{
+  const runs=(await api("/api/runs")).filter(r=>r.status==="done");
+  const q=new URLSearchParams(location.hash.split("?")[1]||"");
+  const sel=q.get("run")|| (runs[0]&&runs[0].id) || "";
+  if(!runs.length){page("<h2>轨迹质量评估</h2><p class='mut'>暂无完成的实验。请先到「三维建图工作台」运行一次建图。</p>");return;}
+  const r=await api("/api/runs/"+sel);
+  const ev=r.metrics.evaluation||{};
+  // 质量等级：ATE/轨迹长度
+  let GRADE={badge:"",text:""};
+  try{
+    const tj=await api("/api/traj/"+r.dataset);
+    const ratio=(ev.ate?.ate_rmse??null)/(tj.length_m||0);
+    if(isFinite(ratio)&&ratio>0){
+      const g=ratio<=0.01?["优","#189d5a"]:ratio<=0.03?["良","#2da44e"]:ratio<=0.05?["合格","#d29922"]:["差","var(--rd)"];
+      GRADE.badge=`<span class="badge" style="background:${g[1]};color:#fff">${g[0]} · 漂移 ${(ratio*100).toFixed(2)}%</span>`;
+      GRADE.text=`相对轨迹长度 ${tj.length_m} m 的漂移率`;
+    }
+  }catch(_){}
+  page(`<h2>轨迹质量评估 — run ${sel}</h2>
+<div class="card">选择实验：<select id="runsel" onchange="location.hash='#/eval?run='+this.value">
+ ${runs.map(x=>`<option value="${esc(x.id)}" ${x.id===sel?"selected":""}>${esc(x.id)} (${x.dataset}, ${x.status})</option>`).join("")}</select>
+ <span class="mut">参考口径：${esc(r.metrics.evaluation_reference||"-")}</span></div>
+<div class="cards">
+ <div class="card"><div class="k">ATE RMSE ${GRADE.badge}</div><div class="v">${ev.ate?.ate_rmse??"-"} m</div>
+   <div class="mut" style="font-size:11px">${GRADE.text}</div></div>
+ <div class="card"><div class="k">ATE 均值 / 最大</div><div class="v" style="font-size:15px">${ev.ate?.ate_mean??"-"} / ${ev.ate?.ate_max??"-"} m</div></div>
+ <div class="card"><div class="k">RPE (1s) RMSE</div><div class="v" style="font-size:15px">${(ev.rpe||[]).find(x=>x.delta_s===1)?.rpe_rmse??"-"} m</div></div>
+ <div class="card"><div class="k">逐帧耗时均值</div><div class="v" style="font-size:15px">${r.metrics.timing?.total_ms_mean??"-"} ms</div></div>
+</div>
+<div class="card"><b>ATE 误差曲线</b><canvas id="ate" class="plot" height="180"></canvas></div>
+<div class="card"><b>轨迹俯视对比（红=估计[已对齐] 蓝=GPS/INS 参考）</b><canvas id="cmp" class="plot" height="360"></canvas></div>
+<div class="card"><b>RPE 各间隔</b>${tbl(["间隔(s)","RMSE(m)","均值(m)","最大(m)","配对数"],(ev.rpe||[]).map(x=>[x.delta_s,x.rpe_rmse,x.rpe_mean,x.rpe_max,x.n_pairs]))}
+<p class="mut">评估方法：时间最近邻关联(±50ms) → SE(3) Umeyama 刚体对齐 → 逐点欧氏误差；单元测试见 docs/VERIFICATION.md。</p></div>
+`);
+  const s=await api(`/api/runs/${sel}/ate_series`);
+  if(s.err&&s.err.length){const c=$("#ate"),x=c.getContext("2d");c.width=c.clientWidth;
+    const mx=Math.max(...s.err,0.1),L=44,B=22,W=c.width-L-10,H=c.height-B-14;
+    x.strokeStyle="#cfd8e3";x.lineWidth=1;
+    for(let g=0;g<=4;g++){const Y=14+(H-4)*g/4;x.beginPath();x.moveTo(L,Y);x.lineTo(c.width-8,Y);x.stroke();
+      x.fillStyle="#5b7290";x.fillText((mx*(1-g/4)).toFixed(1)+" m",4,Y+4);}
+    for(let g=0;g<=4;g++){const X=L+(W-4)*g/4;x.beginPath();x.moveTo(X,14);x.lineTo(X,14+H);x.stroke();
+      const tv=s.t[Math.min(s.t.length-1,Math.round(s.t.length*g/4))]||0;
+      x.fillStyle="#5b7290";x.fillText(Math.round(tv)+"s",X-12,c.height-6);}
+    x.strokeStyle="#1667d9";x.lineWidth=1.6;x.beginPath();
+    s.err.forEach((v,i)=>{const X=L+(W-4)*i/s.err.length,Y=14+(H-4)*(1-v/mx);i?x.lineTo(X,Y):x.moveTo(X,Y);});x.stroke();
+    x.fillStyle="#5b7290";x.fillText("纵轴: ATE (m)   横轴: 时间 (s)   峰值 "+mx.toFixed(2)+" m",L+6,12);}
+  const trj=await api(`/api/runs/${sel}/trajectories`);
+  const c2=$("#cmp");c2.width=c2.clientWidth;
+  const x2=c2.getContext("2d");const all=[...(trj.est||[]),...(trj.ref||[])];
+  if(all.length){const xs=all.map(p=>p[0]),ys=all.map(p=>p[1]);
+    const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+    const sc=Math.min(c2.width/(x1-x0+5),(c2.height-10)/(y1-y0+5));
+    const T=p=>[10+(p[0]-x0)*sc, c2.height-10-(p[1]-y0)*sc];
+    x2.strokeStyle="#58a6ff";x2.beginPath();trj.ref.forEach((p,i)=>{const[X,Y]=T(p);i?x2.lineTo(X,Y):x2.moveTo(X,Y);});x2.stroke();
+    x2.strokeStyle="#f85149";x2.lineWidth=1.6;x2.beginPath();trj.est.forEach((p,i)=>{const[X,Y]=T(p);i?x2.lineTo(X,Y):x2.moveTo(X,Y);});x2.stroke();
+    x2.fillStyle="#8b949e";x2.fillText(`范围 ${Math.round(x1-x0)}m × ${Math.round(y1-y0)}m`,8,14);}
+};
+
+routes.experiments=async()=>{
+  const runs=await api("/api/runs");
+  page(`<h2>实验管理</h2>
+<div class="card"><b>对比两次实验</b>
+ <select id="cmp-a" onchange="PAGE_STATE.cmpA=this.value">${runs.map(r=>`<option value="${r.id}">${r.id} (${r.dataset})</option>`).join("")}</select>
+ <select id="cmp-b" onchange="PAGE_STATE.cmpB=this.value">${runs.map(r=>`<option value="${r.id}">${r.id} (${r.dataset})</option>`).join("")}</select>
+ <button class="primary" onclick="doCompare()">对比</button></div>
+<div id="cmp-res"></div>
+<h3>全部实验
+  <select id="f-ds" onchange="PAGE_STATE.fDs=this.value;routes.experiments()" style="max-width:120px"><option value="">全部数据集</option>${[...new Set(runs.map(r=>r.dataset))].map(t=>`<option ${PAGE_STATE.fDs===t?"selected":""}>${t}</option>`).join("")}</select>
+  <select id="f-st" onchange="PAGE_STATE.fSt=this.value;routes.experiments()" style="max-width:110px"><option value="">全部状态</option>${["done","failed"].map(s=>`<option ${PAGE_STATE.fSt===s?"selected":""}>${s}</option>`).join("")}</select>
+</h3>${tbl(["run","数据集","状态","开始时间","配置/指标","导出"],
+  runs.filter(r=>(!PAGE_STATE.fDs||r.dataset===PAGE_STATE.fDs)&&(!PAGE_STATE.fSt||r.status===PAGE_STATE.fSt)).map(r=>`<tr><td>${r.id}</td><td>${r.dataset}</td><td>${r.status}</td>
+  <td>${new Date(r.started*1000).toLocaleString()}</td>
+  <td><a href="/api/runs/${r.id}/report.html" target="_blank">报告</a></td>
+  <td>${r.status==="done"? `<a href="/api/runs/${r.id}/export/traj.csv">traj.csv</a> <a href="/api/runs/${r.id}/export/evaluation.json">eval.json</a> <a href="/api/runs/${r.id}/export/map_decimated.pcd">map抽样</a> <a href="/api/runs/${r.id}/export/map.pcd" onclick="return confirm('完整地图约 ${((r.map_pcd_size||0)/1e9).toFixed(2)} GB，确定下载？')">map.pcd(${((r.map_pcd_size||0)/1e6).toFixed(0)}MB)</a>` : `<span class="mut">失败（详见日志）</span>`}</td></tr>`))}`);
+  routes.experiments._restore&&routes.experiments._restore();
+};
+routes.experiments.doCompare=async()=>{
+  const r=await api(`/api/runs/compare?a=${$("#cmp-a").value}&b=${$("#cmp-b").value}`);
+  $("#cmp-res").innerHTML=`<div class="card">${tbl(["字段",r.a,r.b],
+    Object.entries(r.fields).map(([k,[va,vb]])=>[k,esc(typeof va==="object"?JSON.stringify(va):va??"-"),esc(typeof vb==="object"?JSON.stringify(vb):vb??"-")]))}</div>`;
+};
+
+routes.experiments._restore=()=>{
+  if(PAGE_STATE.cmpA){const a=$("#cmp-a");if(a)a.value=PAGE_STATE.cmpA;}
+  if(PAGE_STATE.cmpB){const b=$("#cmp-b");if(b)b.value=PAGE_STATE.cmpB;}
+};
+
+routes.logs=async()=>{
+  const runs=await api("/api/runs");
+  const q=new URLSearchParams(location.hash.split("?")[1]||"");
+  const sel=q.get("run")||(runs[0]&&runs[0].id)||"";
+  page(`<h2>运行日志</h2><div class="card">
+  <select id="logsel" onchange="location.hash='#/logs?run='+this.value">
+  ${runs.map(r=>`<option value="${r.id}" ${r.id===sel?"selected":""}>${r.id} (${r.dataset}, ${r.status})</option>`).join("")}</select>
+  <input id="logf" placeholder="过滤关键字" oninput="PAGE_STATE.logf=this.value;renderLog()" style="width:200px"> <a id="logdl" href="#" download>下载日志</a>
+  <label style="font-size:12px"><input type="checkbox" id="log-err" onchange="PAGE_STATE.logErr=this.checked;renderLog()"> 仅错误</label>
+  <label style="font-size:12px"><input type="checkbox" id="log-auto"> 自动刷新</label>
+  <span class="mut" id="logn"></span></div><pre id="logpre">…</pre>`);
+  if(PAGE_STATE.logf){const _f=$("#logf"); if(_f)_f.value=PAGE_STATE.logf;}
+  window.renderLog=async()=>{
+    if(!sel)return;
+    const r=await api(`/api/jobs/${sel}/log?tail=3000`);
+    const f=$("#logf").value;
+    let lines=f?r.lines.filter(l=>l.includes(f)):r.lines;
+    if(document.getElementById("log-err")&&document.getElementById("log-err").checked)
+      lines=lines.filter(l=>/error|failed|died|not exist|Exception/i.test(l));
+    $("#logpre").textContent=lines.join("\n");
+    $("#logn").textContent=`共 ${r.total_lines} 行, 显示 ${lines.length} 行`;
+    $("#logdl").href=`/api/jobs/${sel}/log/download`;
+    if(document.getElementById("log-auto")&&document.getElementById("log-auto").checked&&!routes.logs._t){
+      routes.logs._t=setInterval(()=>{if(location.hash.split("?")[0]==="#/logs")renderLog();else{clearInterval(routes.logs._t);routes.logs._t=null;}},3000);
+    }
+  };
+  renderLog();
+};
+
+routes.users=async()=>{
+  const users=await api("/api/users");
+  const auditRows=await api("/api/audit?tail=50").catch(()=>[]);
+  page(`<h2>用户与权限</h2>
+<div class="card"><b>修改我的密码</b>
+ <div style="display:grid;grid-template-columns:110px 1fr;gap:8px;max-width:480px">
+  <span>原密码</span><input id="pw-old" type="password">
+  <span>新密码</span><input id="pw-new" type="password" placeholder="至少 6 位">
+ </div>
+ <p><button class="primary" onclick="changeMyPwd()">修改密码</button> <span id="pw-msg" class="mut"></span></p></div>
+<div class="card"><b>用户列表</b>${tbl(["用户名","角色","操作"], users.map(u=>[
+  esc(u.username),
+  `<select id="role-${esc(u.username)}" ${u.username===ME.username?"disabled":""}>${Object.entries({"admin":"管理员","operator":"操作员","viewer":"只读用户"}).map(([k,v])=>`<option value="${k}" ${u.role===k?"selected":""}>${v}</option>`).join("")}</select>`,
+  `<button onclick="setRole('${esc(u.username)}')">改角色</button>
+   <button onclick="resetPwd('${esc(u.username)}')">重置密码</button>
+   ${u.username!==ME.username?`<button class="danger" onclick="delUser('${esc(u.username)}')">删除</button>`:"<span class=mut>（当前用户）</span>"}`]))}
+<p class="mut">权限：管理员=全部；操作员=建图/停止/查看；只读用户=仅查看。改动即时生效（会话保留）。</p></div>
+<div class="card"><b>新建用户</b>
+ <div style="display:grid;grid-template-columns:110px 1fr;gap:8px;max-width:480px">
+  <span>用户名</span><input id="nu-name">
+  <span>密码</span><input id="nu-pwd" type="password" placeholder="至少 6 位">
+  <span>角色</span><select id="nu-role"><option value="operator">操作员</option><option value="viewer">只读用户</option><option value="admin">管理员</option></select>
+ </div>
+ <p><button class="primary" onclick="createUser()">创建</button> <span id="nu-msg" class="mut"></span></p></div>
+<div class="card"><b>操作审计（最近 50 条）</b>${tbl(["时间","用户","动作","详情"], auditRows.map(a=>[
+  new Date((a.ts+8*3600)*1000).toISOString().replace("T"," ").slice(0,19), esc(a.user), esc(a.action), esc(a.detail||"")]))}</div>`);
+};
+routes.users.changeMyPwd=async()=>{
+  try{
+    await api("/api/auth/change_password",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({old:$("#pw-old").value,new:$("#pw-new").value})});
+    $("#pw-msg").innerHTML='<span class="ok">已修改</span>';
+  }catch(e){$("#pw-msg").innerHTML=`<span class="bad">${esc(e.error||e.detail||"失败")}</span>`;}
+};
+routes.users.setRole=async(u)=>{
+  try{
+    await api(`/api/users/${u}/role`,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({role:document.getElementById("role-"+u).value})});
+    routes.users();
+  }catch(e){alert(e.error||e.detail||"失败");}
+};
+routes.users.resetPwd=async(u)=>{
+  const p=prompt(`为 ${u} 设置新密码（至少 6 位）：`);
+  if(!p) return;
+  try{
+    await api(`/api/users/${u}/reset_password`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:p})});
+    alert("已重置");
+  }catch(e){alert(e.error||e.detail||"失败");}
+};
+routes.users.delUser=async(u)=>{
+  if(!confirm(`确定删除用户 ${u}？其会话将立即失效。`)) return;
+  try{
+    await api(`/api/users/${u}`,{method:"DELETE"});
+    routes.users();
+  }catch(e){alert(e.error||e.detail||"失败");}
+};
+routes.users.createUser=async()=>{
+  try{
+    const r=await api("/api/users",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username:$("#nu-name").value,password:$("#nu-pwd").value,role:$("#nu-role").value})});
+    $("#nu-msg").innerHTML=`<span class="ok">已创建 ${esc(r.created)} (${esc(r.role)})</span>`;
+    setTimeout(routes.users, 600);
+  }catch(e){$("#nu-msg").innerHTML=`<span class="bad">${esc(e.error||e.detail||"失败")}</span>`;}
+};
+window.changeMyPwd=()=>routes.users.changeMyPwd();
+window.setRole=u=>routes.users.setRole(u);
+window.resetPwd=u=>routes.users.resetPwd(u);
+window.delUser=u=>routes.users.delUser(u);
+window.createUser=()=>routes.users.createUser();
+routes.about=async()=>{
+  const o=await api("/api/overview");
+  page(`<h2>关于软件</h2><div class="card">${tbl(["项目","内容"],[
+    ["软件全称","多传感器激光惯性定位建图与三维轨迹评估软件"],
+    ["简称","三维激光SLAM建图与轨迹评估系统"],
+    ["版本","V1.0"],
+    ["著作权人","（申报单位名称，待定）"],
+    ["完成日期","2026年10月"],
+    ["运行环境","Linux(aarch64/amd64) · Docker · 现代浏览器"],
+    ["自研模块","数据适配(ring/time重建·IMU合成角速度)、任务调度、算法配置、轨迹评估(ATE/RPE·Umeyama对齐)、实验管理、报告导出、Web三维点云渲染器"],
+    ['第三方组件','FAST-LIO2 '+(o.fastlio||'').split(' ')[0]+' (GPL-2.0, 容器隔离调用)、ROS Noetic (BSD)、PCL/Eigen/OpenCV (BSD/MIT/Apache-2.0)、FastAPI/Uvicorn (MIT/GPL-3)、SQLite (PD)'],
+    ["数据说明","演示数据 KITTI Raw (CC BY-NC-SA 3.0)，仅研究用途"],
+    ["闭环说明","回环候选检测(几何重访法)已实现；位姿图优化为后续版本规划"],
+  ])}</div>`);
+};
+routes.loop=async()=>{
+  const runs=(await api("/api/runs")).filter(r=>r.status==="done");
+  page(`<h2>闭环分析（回环候选检测）</h2>
+<div class="card">
+  选择实验：<select id="lp-run">${runs.map(r=>`<option value="${r.id}">${r.id} (${r.dataset})</option>`).join("")}</select>
+  数据源：<select id="lp-src"><option value="ref">GPS/INS 参考（无漂移，看哪里有回环）</option>
+                             <option value="est">估计轨迹（如实反映当前精度）</option></select>
+  半径：<input id="lp-r" value="15" style="width:70px"> m
+  最小时间间隔：<input id="lp-g" value="30" style="width:70px"> s
+  <button class="primary" onclick="doLoops()">检测重访</button>
+  <span class="mut" id="lp-msg"></span>
+</div>
+<div class="card"><b>重访轨迹（绿线 = 检测到的回环候选对）</b><canvas id="lp-canvas" class="plot" height="380"></canvas></div>
+<div id="lp-table"></div>
+<div class="card"><b>位姿图优化与全局校正</b><p class="mut">V2.x 规划中（STD 地点识别 + GTSAM），当前页面提供的是几何重访候选检测，不含校正。已实测：0001 与 0033 均存在真实空间重访（参考轨迹重访间距 1~14m）。</p></div>`);
+};
+routes.loop.doLoops=async()=>{
+  const id=$("#lp-run").value, src=$("#lp-src").value;
+  const radius=parseFloat($("#lp-r").value)||15, gap=parseFloat($("#lp-g").value)||30;
+  $("#lp-msg").textContent="检测中…";
+  try{
+    const d=await api(`/api/runs/${id}/loops?source=${src}&radius=${radius}&min_gap_s=${gap}`);
+    $("#lp-msg").textContent=`候选 ${d.candidates.length} 个`;
+    const c=d.canvas||drawLoops(d);
+    function drawLoops(d){
+      const cv=$("#lp-canvas"); cv.width=cv.clientWidth;
+      const x=cv.getContext("2d");
+      const tr=d.trajectory; if(!tr.length) return;
+      const xs=tr.map(p=>p[0]), ys=tr.map(p=>p[1]);
+      const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+      const sc=Math.min((cv.width-20)/(x1-x0+5),(cv.height-20)/(y1-y0+5));
+      const T=p=>[10+(p[0]-x0)*sc, cv.height-10-(p[1]-y0)*sc];
+      x.strokeStyle="#1667d9"; x.beginPath();
+      tr.forEach((p,i)=>{const[X,Y]=T(p); i?x.lineTo(X,Y):x.moveTo(X,Y);}); x.stroke();
+      x.strokeStyle="#189d5a"; x.lineWidth=1.5;
+      d.candidates.forEach(c=>{const[A,B]=[T(c.p1),T(c.p2)];
+        x.beginPath();x.moveTo(A[0],A[1]);x.lineTo(B[0],B[1]);x.stroke();});
+      x.lineWidth=1; x.fillStyle="#8b949e";
+      x.fillText(`${src==="ref"?"GPS/INS 参考":"估计轨迹"} | 范围 ${Math.round(x1-x0)}m × ${Math.round(y1-y0)}m | 绿线=回环候选`,8,14);
+    }
+    $("#lp-table").innerHTML = d.candidates.length?
+      tbl(["t1(s)","t2(s)","时间间隔(s)","空间距离(m)","位置1","位置2"],
+        d.candidates.map(c=>[c.t1,c.t2,c.gap_s,`<b>${c.dist}</b>`,
+          `(${c.p1.join(", ")})`,`(${c.p2.join(", ")})`])) :
+      '<p class="mut">该半径/间隔下未检测到重访候选。可增大半径，或参考轨迹用于确认路线本身是否有回环。</p>';
+  }catch(e){$("#lp-msg").innerHTML=`<span class="bad">${esc(e.error||e.message)}</span>`;}
+};
+window.doLoops=()=>routes.loop.doLoops();
+
+function resize(){cv.width=cv.clientWidth*devicePixelRatio;cv.height=cv.clientHeight*devicePixelRatio;gl.viewport(0,0,cv.width,cv.height);}
+window.onresize=resize;
+
+let lastHash=null;
+async function route(){
+  const h=location.hash||"#/overview";
+  document.body.classList.toggle("login-mode", h.split("?")[0]==="#/login");
+  if(h===lastHash) return;           // 同一地址重复切换不重绘（保留页面状态）
+  lastHash=h;
+  const path=h.split("?")[0].replace(/^#+\/?/,"/").replace(/^\/+/,"")||"overview";
+  $$("#nav a").forEach(a=>a.classList.toggle("on",a.getAttribute("href")===`#/${path}`));
+  if(path==="users" && (!ME || ME.role!=="admin")){
+    page("<h2>用户与权限</h2><div class='card'><span class='bad'>仅管理员可访问</span></div>"); return;
+  }
+  try{
+    const fn=routes[path]||routes.overview;
+    routes.workspace.leave&&path!=="workspace"&&routes.workspace.leave();
+    await fn();
+  }catch(e){
+    console.error(e);
+    $("#page").style.display="block";$("#ws-wrap").style.display="none";
+    $("#page").innerHTML=`<h2>页面加载出错</h2><div class="card"><span class="bad">${esc(e.message||e)}</span>
+    <p class="mut">hash: #/${esc(path)} —— 可返回 <a href="#/overview" style="color:#58a6ff">系统总览</a></p></div>`;
+  }
+}
+window.onerror=(msg,src,line)=>{const el=document.getElementById("msg")||document.getElementById("page");
+  if(el)el.insertAdjacentHTML("beforeend",`<div class="card"><span class="bad">JS错误: ${esc(msg)} @line ${line}</span></div>`);};
+window.onhashchange=route;
+window.doValidate=(t,b)=>routes.datasets.doValidate(t,b);
+window.doImport=()=>routes.datasets.doImport();
+window.doCompare=()=>routes.experiments.doCompare();
+window.saveCfg=()=>routes.config.saveCfg();
+window.watchJob=(id,cb)=>watchJob(id,cb);
+window.loadMapGlobal=(t)=>loadMap(t);
+boot().then(route).catch(e=>{
+  console.error(e);
+  const p=document.getElementById("page");
+  if(p){p.style.display="block";p.innerHTML="<h2>初始化失败</h2><div class=\"card\"><span class=\"bad\">"+String(e&&e.message||e)+"</span><p class=\"mut\">请刷新重试；若持续出现请联系管理员查看服务日志。</p></div>";}
+});
+</script>
+</body>
+</html>
