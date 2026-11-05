@@ -266,3 +266,13 @@ KISS-ICP 速度/工程性最佳（31ms/帧、pip 即用），FAST-LIO2 稳定成
   LIO 日志/输出目录正常生成
 - 精度评估：待官方 avia bag（仅 OneDrive/百度网盘交互式下载，无法脚本化）——网盘下载后即可按同口径评估
 - 结论：**R3LIVE 在鲲鹏 920 上构建与运行时可用**，适配坑集中在 x86 SIMD 假设（与 LIO-SAM 的坑同源不同形）
+
+### 模态 E 实测结果（2026-11-06）：SuperPoint 学习类特征前端 ✅ 昇腾 310P 推理成功
+
+- 运行时：现成容器 `yolo26_train`（mindie:3.1.0-cann9.0.1-torch_npu2.9.0-310p），零新增安装
+- 权重：官方 superpoint_v1.pth（5.2MB，git clone 获取——raw 直链被限流）
+- 网络：官方结构精确对齐（encoder 64/64/128/128；convPa 3x3 128→256；convPb 1x1 256→65；convDa 3x3 128→256；convDb 1x1 256→256）
+- 结果：**NPU 推理 1.6ms/帧（对比 CPU 同网络 ~30ms+），KITTI 0033 图像检出 554 关键点**，256 维描述子
+- 脚本：`system/tools/superpoint_npu_infer.py`（可复现：任意 aarch64 + 310P + torch_npu 环境直接跑）
+- 结论：**"CPU 几何 + NPU 学习前端"的国产异构方案在鲲鹏 920 + 昇腾 310P 上验证成立**——SuperPoint 1.6ms/帧
+  完全可以插进 FAST-LIO2/VINS 的特征管线（模态 B/C 的跟踪前端），为语义 SLAM（模态 E 的下一层）铺路
