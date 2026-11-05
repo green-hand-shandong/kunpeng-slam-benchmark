@@ -255,3 +255,14 @@ KISS-ICP 速度/工程性最佳（31ms/帧、pip 即用），FAST-LIO2 稳定成
 - 两个上游 bug 修复：KITTIOdomTest 缺 `changeSensorType(0,1)`（STEREO 恒 false）；KITTIGPSTest 缺 `inputIMU` 调用（IMU 永远没喂）
 - 结果：双目模式初始化成功（vio.csv 1584 帧）；双目+IMU 模式因 **KITTI oxts 的 IMU 字段是 GPS 差分导数而非真实 IMU**（00 篇早已记录的坑）发散
 - 结论：**鲲鹏 920 可构建运行 VINS-Fusion**；视觉惯性精度验证需要 EuRoC/TUM-VI 级数据集（当前网络对 ETH/多数外网不可达，待网络恢复后补）
+
+### 模态 D 实测结果（2026-11-05）：R3LIVE ✅ 构建成功 + 运行时验证通过
+
+- 选型：**R3LIVE**（hku-mars，LIO+VIO 双子系统）；FAST-LIVO2 未开源不选
+- 构建（5 处 aarch64 适配，全部留档）：Livox-SDK 源码编译安装；livox_ros_driver 入工作区；
+  `-msse2/-msse3` 移除；`cpuid.h` 存根（tools_logger.hpp + MVS/Util.cpp 两处）；no-fma pragma 移除；
+  lkpyramid.cpp 裸 SSE 块包 `__x86_64__` 守卫（恢复 CV_SIMD128 平衡）；补 OpenCV hal.hpp include
+- 运行时验证：**合成 Livox bag（60s：600 帧 CustomMsg + 12000 IMU + 900 图像）全链路消费，R3LIVE 三节点无崩溃**，
+  LIO 日志/输出目录正常生成
+- 精度评估：待官方 avia bag（仅 OneDrive/百度网盘交互式下载，无法脚本化）——网盘下载后即可按同口径评估
+- 结论：**R3LIVE 在鲲鹏 920 上构建与运行时可用**，适配坑集中在 x86 SIMD 假设（与 LIO-SAM 的坑同源不同形）

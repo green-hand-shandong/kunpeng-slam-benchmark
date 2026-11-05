@@ -1,0 +1,2 @@
+livox_ros_driver/livox_ros_driver:r3live
+-DCATKIN_DEVEL_PREFIX=/root/ws7/devel -DCMAKE_INSTALL_PREFIX=/root/ws7/install -G Unix Makefiles

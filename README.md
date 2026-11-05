@@ -36,7 +36,7 @@
 | **A. 2D 激光（±IMU/轮式）** | 室内机器人、扫地机 | Cartographer 2D 模式同镜像换配置即可；SLAM Toolbox/Gmapping/Hector 备选 |
 | **B. 3D 激光 + IMU（LIO）** | 车载、无人机、手持 | **当前主线**：Point-LIO / KISS-ICP / FAST-LIO2 / LeGO-LOAM / LIO-SAM 已全部实测（见上表）；FASTER-LIO 排期 |
 | **C. 视觉 / 视觉-惯性** | 室内、无激光、无人机 | **VINS-Fusion 已构建跑通**（双目模式，KITTI 0033；IMU 融合待 EuRoC 级数据）；ORB-SLAM3 待立项 |
-| **D. 激光-视觉-惯导融合** | 高精度建图、研究 | FAST-LIVO2 / R3LIVE 视需求 |
+| **D. 激光-视觉-惯导融合** | 高精度建图、研究 | **R3LIVE 构建成功 + 运行时验证**（合成 bag 全链路消费；FAST-LIVO2 未开源） |
 | **E. 学习类（GPU/NPU）** | 语义、动态物体剔除 | 昇腾 310P 线：语义 SLAM 外挂、SuperPoint 特征前端 |
 
 详细选型矩阵与逐算法适配档案见 `system/docs/ALGO_PLAN.md`。
