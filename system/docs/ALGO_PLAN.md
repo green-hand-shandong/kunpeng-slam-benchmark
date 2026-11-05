@@ -286,3 +286,13 @@ KISS-ICP 速度/工程性最佳（31ms/帧、pip 即用），FAST-LIO2 稳定成
 - 脚本：`system/tools/superpoint_stereo_match.py`
 - 结论：**"NPU 学习前端 + CPU 几何"异构接入路线验证成立**——SuperPoint 的输出可直接支撑双目深度/特征轨迹，
   为接入 FAST-LIO2/VINS 前端管线铺平（剩余工作是把 cdist 匹配替换为 LK 光流或描述子投影跟踪）
+
+### 模态 E·语义外挂（2026-11-06）：YOLOv8n-seg 实例分割 ✅
+
+- 运行时：同 `yolo26_train` 容器（ultralytics 8.4.189 + torch_npu 2.9.0）
+- 环境修复：torchvision 0.16→0.24.0 + ultralytics-thop 补装（原环境 NMS 的 C++ ops 加载失败导致全图 0 检测——根因是版本不匹配，不是 NPU）
+- 数据：KITTI 0033 第 500 帧（居民区停放车辆）
+- 结果：**检出 5 辆 car，实例掩码 (5, 416, 1280)，NPU 稳态 696ms/帧 @imgsz=1280**
+- 结论：**语义外挂可行性成立**——实例掩码 × 激光点云投影（camera→lidar 外参已有）即可剔除车辆/行人点云，
+  直接用于 FAST-LIO2/Point-LIO 管线的动态物体滤除。696ms/帧对 10Hz 激光帧率偏高，但剔除层可按 1~2Hz 低频运行，
+  或换 yolov8n-seg 的 TensorRT/ONNX 量化版提速。

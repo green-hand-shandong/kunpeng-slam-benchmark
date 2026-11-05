@@ -37,7 +37,7 @@
 | **B. 3D 激光 + IMU（LIO）** | 车载、无人机、手持 | **当前主线**：Point-LIO / KISS-ICP / FAST-LIO2 / LeGO-LOAM / LIO-SAM 已全部实测（见上表）；FASTER-LIO 排期 |
 | **C. 视觉 / 视觉-惯性** | 室内、无激光、无人机 | **VINS-Fusion 已构建跑通**（双目模式，KITTI 0033；IMU 融合待 EuRoC 级数据）；ORB-SLAM3 待立项 |
 | **D. 激光-视觉-惯导融合** | 高精度建图、研究 | **R3LIVE 构建成功 + 运行时验证**（合成 bag 全链路消费；FAST-LIVO2 未开源） |
-| **E. 学习类（GPU/NPU）** | 语义、动态物体剔除 | **SuperPoint 推理 1.6ms/帧 + 双目匹配验证通过**（1139 对有效视差，中位深度 23.7m）；语义外挂排期 |
+| **E. 学习类（GPU/NPU）** | 语义、动态物体剔除 | **SuperPoint 1.6ms/帧 + 双目匹配 1139 对 + YOLOv8n-seg 语义外挂（5 车实例掩码，696ms）全部验证通过** |
 
 详细选型矩阵与逐算法适配档案见 `system/docs/ALGO_PLAN.md`。
 
