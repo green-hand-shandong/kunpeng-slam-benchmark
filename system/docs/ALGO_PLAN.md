@@ -237,3 +237,12 @@ KISS-ICP 速度/工程性最佳（31ms/帧、pip 即用），FAST-LIO2 稳定成
 ### 平台意义
 每个模态一台"算法矩阵"，同一模态内同数据同口径横向对比（本报告已完成的 B 模态即是样板）；
 跨模态则由数据适配层（kitti_to_bag.py 等同类脚本）+ 统一评估器（evaluator.py）保证可比性。
+
+### 模态 A 实测结果（2026-11-05）：Cartographer 2D ✅
+
+- 数据：`cartographer_paper_deutsches_museum.bag`（官方演示包，2D MultiEchoLaserScan 10306 帧 + IMU 70956 帧，283.8s，德国博物馆实拍）
+- 配置：官方 `backpack_2d.lua` + 官方 `backpack_2d.urdf`（零改动）
+- 关键修复：offline 模式需 `echoes:=/horizontal_laser_2d imu:=/imu` remap（同 3D 的 expected-sensor-id 坑）
+- 结果：**66 submaps，墙钟 118.7s 处理 283.8s 数据（约 2.4x 实时），CPU 467s**；全局回环约束正常
+- 产物：`museum_map.pgm/png`（1955×2009 占据栅格 @0.05m，博物馆布局清晰）
+- 结论：**Cartographer 的主场（2D 室内）在鲲鹏 920 上完全可用**——与车载 3D 的塌缩形成鲜明对照，验证了"算法-场景匹配"结论
