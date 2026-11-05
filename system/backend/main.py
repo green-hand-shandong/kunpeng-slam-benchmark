@@ -800,6 +800,40 @@ def report_json(run_id: str):
     return r
 
 
+
+@app.get("/modality-report")
+def modality_report():
+    """五模态算法验证总览（鲲鹏 920 + 昇腾 310P）——按模态聚合 runs 库实测结果。"""
+    import sqlite3 as _sq
+    conn = _sq.connect(RESULTS / "system.db")
+    conn.row_factory = _sq.Row
+    rows = conn.execute(
+        "SELECT id, dataset, status, metrics FROM runs ORDER BY rowid DESC").fetchall()
+    conn.close()
+    items = []
+    for r in rows:
+        import json as _j
+        try:
+            m = _j.loads(r["metrics"])
+        except Exception:
+            continue
+        alg = m.get("algorithm", "")
+        note = (m.get("note") or "")[:120]
+        ate = m.get("ate_rmse_m") or (m.get("evaluation") or {}).get("ate", {}).get("ate_rmse")
+        items.append((r["id"], r["dataset"], alg, r["status"], ate, note))
+    body = "".join(
+        f"<tr><td>{i}</td><td>{d}</td><td>{a}</td><td>{st}</td><td>{ate if ate else '-'}</td>"
+        f"<td>{no}</td></tr>"
+        for i, d, a, st, ate, no in items)
+    html = f"""<html><head><meta charset="utf-8"><title>五模态算法验证总览 — 鲲鹏 920 + 昇腾 310P</title>
+<style>body{{font-family:sans-serif;margin:2em}}table{{border-collapse:collapse;width:100%}}
+td,th{{border:1px solid #ccc;padding:6px 10px;font-size:14px}}th{{background:#f0f0f0}}</style></head><body>
+<h1>五模态 SLAM 算法验证总览</h1>
+<p>硬件：鲲鹏 920 (aarch64) + 昇腾 310P3 | 数据：KITTI 0001/0033、合成 Livox、官方 SuperPoint 权重</p>
+<table><tr><th>run</th><th>数据</th><th>算法</th><th>状态</th><th>ATE RMSE</th><th>备注</th></tr>{body}</table>
+</body></html>"""
+    return HTMLResponse(html)
+
 @app.get("/api/runs/{run_id}/report.html")
 def report_html(run_id: str):
     r = _db_get_run(run_id)
