@@ -1,8 +1,0 @@
-prefix=/root/ws7/devel
-
-Name: r3live
-Description: Description of r3live
-Version: 1.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
