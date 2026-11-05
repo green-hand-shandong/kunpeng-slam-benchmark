@@ -276,3 +276,13 @@ KISS-ICP 速度/工程性最佳（31ms/帧、pip 即用），FAST-LIO2 稳定成
 - 脚本：`system/tools/superpoint_npu_infer.py`（可复现：任意 aarch64 + 310P + torch_npu 环境直接跑）
 - 结论：**"CPU 几何 + NPU 学习前端"的国产异构方案在鲲鹏 920 + 昇腾 310P 上验证成立**——SuperPoint 1.6ms/帧
   完全可以插进 FAST-LIO2/VINS 的特征管线（模态 B/C 的跟踪前端），为语义 SLAM（模态 E 的下一层）铺路
+
+### 模态 E·接入验证（2026-11-06）：SuperPoint 双目匹配 ✅
+
+- 数据：KITTI 0033 第 100 帧双目对（L/R 各 1226×370，基线 0.537m，fx=707.09）
+- 流程：左右目各自过 SuperPoint NPU → 256 维描述子 → GPU cdist 最近邻（阈值 0.7）→ 同行正视差筛选
+- 结果：**kpL=1644 / kpR=1667 / 有效匹配 1139 对 / 中位视差 16px → 隐含中位深度 23.7m**（居民区街道期望 10~50m ✓）
+- 首次调用含 NPU JIT 编译（~4s），稳态摊薄
+- 脚本：`system/tools/superpoint_stereo_match.py`
+- 结论：**"NPU 学习前端 + CPU 几何"异构接入路线验证成立**——SuperPoint 的输出可直接支撑双目深度/特征轨迹，
+  为接入 FAST-LIO2/VINS 前端管线铺平（剩余工作是把 cdist 匹配替换为 LK 光流或描述子投影跟踪）
