@@ -246,3 +246,12 @@ KISS-ICP 速度/工程性最佳（31ms/帧、pip 即用），FAST-LIO2 稳定成
 - 结果：**66 submaps，墙钟 118.7s 处理 283.8s 数据（约 2.4x 实时），CPU 467s**；全局回环约束正常
 - 产物：`museum_map.pgm/png`（1955×2009 占据栅格 @0.05m，博物馆布局清晰）
 - 结论：**Cartographer 的主场（2D 室内）在鲲鹏 920 上完全可用**——与车载 3D 的塌缩形成鲜明对照，验证了"算法-场景匹配"结论
+
+### 模态 C 实测结果（2026-11-05）：VINS-Fusion ✅ 构建+双目跑通，⛔ IMU 融合受数据限制
+
+- 数据：**零下载**——KITTI 0033 的双目灰度（image_00/01 各 1594 帧）从已有 sync zip 解压；oxts extract 也已在本地
+- 构建：carto:noetic 复用（Ceres/lua 已有）+ 补 cv_bridge/image_transport/pcl_ros；OpenCV4 兼容修复 6 处
+  （CV_AA/CV_FONT/CV_LOAD_IMAGE→现代 API；camera_models 加 calib3d_c.h/imgproc_c.h 兼容头）
+- 两个上游 bug 修复：KITTIOdomTest 缺 `changeSensorType(0,1)`（STEREO 恒 false）；KITTIGPSTest 缺 `inputIMU` 调用（IMU 永远没喂）
+- 结果：双目模式初始化成功（vio.csv 1584 帧）；双目+IMU 模式因 **KITTI oxts 的 IMU 字段是 GPS 差分导数而非真实 IMU**（00 篇早已记录的坑）发散
+- 结论：**鲲鹏 920 可构建运行 VINS-Fusion**；视觉惯性精度验证需要 EuRoC/TUM-VI 级数据集（当前网络对 ETH/多数外网不可达，待网络恢复后补）

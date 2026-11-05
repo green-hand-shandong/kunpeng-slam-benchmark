@@ -38,3 +38,6 @@ ws5/devel/
 ws5/src/
 ws5/.catkin_workspace
 ws4/.catkin_workspace
+ws6/build/
+ws6/devel/
+ws6/src/
