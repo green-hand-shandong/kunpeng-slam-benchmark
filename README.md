@@ -26,6 +26,21 @@
 2. **Point-LIO 精度最佳（0.084m），KISS-ICP 工程性最佳（pip 即用、31ms/帧）**，FAST-LIO2 成熟稳定，LeGO-LOAM 轻量可用（1.445m），LIO-SAM 跑通待真 IMU。车载梯队：Point-LIO / FAST-LIO2 / KISS-ICP。
 3. **Cartographer 的 3D 前端对"高速起始 + 10Hz 点云"车载场景结构性不适配**：轨迹空间塌缩 4 倍（真值 112.9m 它只输出 24.4m），6 轮"一次一个变量"的修复实验（点云时间约定/匹配权重/截远点/累积帧/gravity 常数/odom 输入）全部无效——塌缩对配置不敏感，是 `PoseExtrapolator` 位姿差分速度估计被"起始钉死"历史拖住的正反馈。**它适合低速/室内场景**（其官方用例即背包/室内），适配工作已全部完成并固化，随时可接入平台。
 
+
+## 算法全景：按输入模态界定
+
+平台按**输入模态**组织算法，每个模态一个可插拔的算法矩阵（同模态内同数据同口径横向对比）：
+
+| 模态 | 典型场景 | 平台状态 |
+|---|---|---|
+| **A. 2D 激光（±IMU/轮式）** | 室内机器人、扫地机 | Cartographer 2D 模式同镜像换配置即可；SLAM Toolbox/Gmapping/Hector 备选 |
+| **B. 3D 激光 + IMU（LIO）** | 车载、无人机、手持 | **当前主线**：Point-LIO / KISS-ICP / FAST-LIO2 / LeGO-LOAM / LIO-SAM 已全部实测（见上表）；FASTER-LIO 排期 |
+| **C. 视觉 / 视觉-惯性** | 室内、无激光、无人机 | ORB-SLAM3 / VINS-Fusion / OpenVINS 待立项（视觉线，GPL-3 需隔离） |
+| **D. 激光-视觉-惯导融合** | 高精度建图、研究 | FAST-LIVO2 / R3LIVE 视需求 |
+| **E. 学习类（GPU/NPU）** | 语义、动态物体剔除 | 昇腾 310P 线：语义 SLAM 外挂、SuperPoint 特征前端 |
+
+详细选型矩阵与逐算法适配档案见 `system/docs/ALGO_PLAN.md`。
+
 ## 目录结构
 
 ```
