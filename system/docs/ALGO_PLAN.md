@@ -180,3 +180,12 @@ KISS-ICP 速度/工程性最佳（31ms/帧、pip 即用），FAST-LIO2 稳定成
   imuTopic 改 `/kitti/oxts/imu`；bag 回放必须 `--clock`（use_sim_time）。
 
 **六算法总表**（+第一批）：见上表与第一批表。GTSAM 全家桶（LIO-SAM/LeGO-LOAM）在鲲鹏 920 完全可用。
+
+### 收尾补充（2026-11-05）
+
+- **LIO-SAM 调参闭环**：实测合成 IMU 噪声（gyro std≈0.011 rad/s，acc std≈0.36 m/s²）后按数据重标定——
+  T1（accNoise 0.05/gyrNoise 0.01/biasN×10）ATE 19.8→**18.1m**；T2（再放宽一档）20.5m 过头。
+  T1 为正式结果。剩余差距是合成角速度 IMU 的硬件级特性（无磁力计、100Hz、RPY 差分合成），调参无法消除。
+- **KISS-ICP 0033 交叉验证**：1594 帧（1.7km 带回环居民区）全序列跑通，ATE 33.0m（漂移 ~2%）——
+  纯里程计（无 IMU、无回环）的正常定位；同序列 FAST-LIO2 最优基线 4.83m。数据适配层跨序列复用成功。
+- **镜像固化**：fastlio:noetic / carto:noetic / lio-sam:noetic / lego:noetic 四个镜像，任何 aarch64 主机可直接复现。
