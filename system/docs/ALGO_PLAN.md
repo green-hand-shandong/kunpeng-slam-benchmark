@@ -296,3 +296,13 @@ KISS-ICP 速度/工程性最佳（31ms/帧、pip 即用），FAST-LIO2 稳定成
 - 结论：**语义外挂可行性成立**——实例掩码 × 激光点云投影（camera→lidar 外参已有）即可剔除车辆/行人点云，
   直接用于 FAST-LIO2/Point-LIO 管线的动态物体滤除。696ms/帧对 10Hz 激光帧率偏高，但剔除层可按 1~2Hz 低频运行，
   或换 yolov8n-seg 的 TensorRT/ONNX 量化版提速。
+
+### 模态 E·管线接入（2026-11-06）：语义掩码 × 激光投影滤除 ✅
+
+- 全链路打通：YOLOv8n-seg 实例掩码（NPU）→ velo→cam 投影（calib_velo_to_cam + K_00）→ 车辆点滤除
+- 数据：KITTI 0033 第 500 帧（125586 激光点，9515 点入相机视野）
+- 结果：**2014 点（入视野的 21.2%）被识别为车辆点可滤除**，动态点深度中位 26.2m（范围 7.2~66.0m，与街景一致）
+- 脚本：`system/tools/semantic_lidar_filter_demo.py`；结果存档 `figures/semantic_filter_result.txt`
+- 结论：**语义外挂接入 FAST-LIO2 的路径完全打通**——只需在 preprocess 阶段（ kitti_to_bag 之后、
+  FAST-LIO 之前）加此掩码滤除，即可实现"鲲鹏 CPU 几何 + 昇腾 NPU 语义"的动态物体剔除闭环
+- 适配注：投影用 K_00 未矫正内参（09_30 版 calib 无 R0_1），NPU 退出 hook 会吞 stdout，结果需写文件读取

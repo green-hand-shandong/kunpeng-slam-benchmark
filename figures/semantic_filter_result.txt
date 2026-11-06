@@ -1,0 +1,5 @@
+detections: 5
+mask coverage: 10.7%
+lidar pts: 125586, in-view: 9515
+dynamic points removable: 2014 (21.2% of in-view)
+dynamic depth: median 26.2 m, range [7.2, 66.0]
