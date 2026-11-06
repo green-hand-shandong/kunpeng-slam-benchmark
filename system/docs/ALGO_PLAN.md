@@ -320,3 +320,14 @@ LIO-SAM 硬性要求 9 轴（含磁力计/绝对姿态）≥200Hz IMU 做预积�
 
 **结论**：LIO-SAM 在鲲鹏 920 上的构建/运行已验证（本档案），精度上限被数据源卡住而非平台——
 列入"真 IMU 硬件到位后重测"清单，当前车载梯队以 Point-LIO/FAST-LIO2/KISS-ICP 为准。
+
+### LIO-SAM 数据源探测补充（2026-11-06 晚）
+
+用户指出"IMU 数据集应该有"——完全正确，核实结果：
+1. **LIO-SAM 官方自带 6 段 sample dataset**（walking/park/garden/rotation/campus，9 轴 200Hz，配置即用）✓ 存在
+2. 但托管全在 **Google Drive**——当前网络不可达（连接超时）✗
+3. GitHub 镜像搜索：walking_dataset.bag 镜像仓是空壳；codermery benchmark 用 Newer College（表单墙+Google Drive 双卡）✗
+4. M2DGR（复旦，含真 IMU）：官网 fusion.unm.edu 与 GitHub 均超时 ✗
+
+**结论修正**：不需要买真 IMU 硬件——LIO-SAM 官方 sample 即可完成精度重测，唯一障碍是下载通道。
+网络窗口恢复后 5 分钟内可完成（链接已存档在本节）。**此前"待真硬件"的结论修正为"待网络窗口"**。
