@@ -17,7 +17,7 @@ roslaunch point_lio mapping_kitti.launch > /tmp/pointlio.log 2>&1 &
 LAUNCH_PID=$!
 sleep 10
 
-rosbag record -O /data/kitti/odom_${TAG}.bag /Odometry > /tmp/record.log 2>&1 &
+rosbag record -O /data/kitti/odom_${TAG}.bag /aft_mapped_to_init > /tmp/record.log 2>&1 &
 REC=$!
 sleep 1
 

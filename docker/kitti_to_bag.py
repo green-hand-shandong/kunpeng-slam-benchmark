@@ -120,11 +120,12 @@ def main():
     ap.add_argument('oxts_dir', help='100Hz oxts 目录（extract 包解出，含 data/ 与 timestamps.txt）')
     ap.add_argument('out_bag')
     ap.add_argument('--scan-rate', type=float, default=10.0)
+    ap.add_argument('--velodyne-subdir', default='data', help='velodyne_points 子目录(data 或 data_semfiltered)')
     ap.add_argument('--topic-lidar', default='/velodyne_points')
     ap.add_argument('--topic-imu', default='/kitti/oxts/imu')
     args = ap.parse_args()
 
-    bins = sorted(glob.glob(os.path.join(args.sync_dir, 'velodyne_points/data/*.bin')))
+    bins = sorted(glob.glob(os.path.join(args.sync_dir, f'velodyne_points/{args.velodyne_subdir}/*.bin')))
     assert bins, 'no velodyne bins found'
     velo_ts = open(os.path.join(args.sync_dir, 'velodyne_points/timestamps.txt')).read().splitlines()
     assert len(bins) == len(velo_ts), f'{len(bins)} bins vs {len(velo_ts)} timestamps'

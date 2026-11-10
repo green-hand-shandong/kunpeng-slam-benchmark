@@ -1,0 +1,81 @@
+{
+ "table1_ate_kitti0001": {
+  "Point-LIO": 0.084,
+  "KISS-ICP": 0.607,
+  "LeGO-LOAM": 1.445,
+  "FAST-LIO2": 1.958,
+  "LIO-SAM": 19.803,
+  "Cartographer 3D": 24.744
+ },
+ "table2_ate_kitti0033": {
+  "FAST-LIO2": 24.453,
+  "FAST-LIO2+semfilter": 26.281,
+  "KISS-ICP": 33.042
+ },
+ "table3_euroc": {
+  "VINS-Fusion MH_01": 0.228
+ },
+ "timing": {
+  "note": "P0-2 统一计时表。口径混合: 内部计时优先, 其余为 bench wall 拆分近似。0001=11.65s@1x",
+  "kitti_0001_bench": {
+   "fastlio2": {
+    "wall_s": 43.1,
+    "frames": 62,
+    "note": "内部计时更准: 195ms/帧 @0033"
+   },
+   "pointlio": {
+    "wall_s": 42.4,
+    "frames": 80,
+    "approx_ms_per_frame": 145
+   },
+   "liosam": {
+    "wall_s": 38.7,
+    "frames": 26,
+    "approx_ms_per_keyframe": 448
+   },
+   "legoloam": {
+    "wall_s": 37.4,
+    "frames": 27,
+    "approx_ms_per_keyframe": 431
+   }
+  },
+  "recorded": {
+   "kissicp": {
+    "ms_per_frame": 31,
+    "source": "内部计时",
+    "rate": "32Hz 超实时"
+   },
+   "fastlio2": {
+    "ms_per_frame": 195,
+    "source": "内部计时 time_log @0033",
+    "rate": "5.1Hz 实时"
+   },
+   "carto3d": {
+    "ms_per_frame": 140,
+    "source": "内部计时",
+    "rate": "实时"
+   },
+   "carto2d": {
+    "ratio": "2.4x realtime",
+    "source": "118.7s 处理 283.8s 数据"
+   },
+   "vins_euroc": {
+    "ratio": "realtime",
+    "source": "1036 poses / 103s bag"
+   },
+   "superpoint_npu": {
+    "ms_per_frame": 1.6,
+    "device": "Ascend 310P"
+   },
+   "yolo26nseg": {
+    "ms_per_frame": 696,
+    "device": "Ascend 310P",
+    "note": "语义滤除按 1-2Hz 低频运行"
+   },
+   "yolo26nseg_onnx_cpu": {
+    "ms_per_frame": 234,
+    "note": "P0-1 闭环实验用 CPU ONNX"
+   }
+  }
+ }
+}
