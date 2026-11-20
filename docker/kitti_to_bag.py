@@ -89,10 +89,13 @@ def imu_msg(values, stamp):
     m.header.frame_id = 'imu'
     qx, qy, qz, qw = quat_from_euler(f[3], f[4], f[5])
     m.orientation.x, m.orientation.y, m.orientation.z, m.orientation.w = qx, qy, qz, qw
-    # KITTI oxts 列实测结论（见 slam/06_跑通记录.md）:
-    #   [3:6] roll/pitch/yaw (rad)  [14:17] af/al/au 车体系加速度 (m/s², au≈+9.8 ✓)
-    #   [11:14] 是世界系 NED 加速度 an/ae/ad, 不是角速度! oxts 包里没有陀螺仪字段,
-    #   角速度由 100Hz RPY 差分+平滑合成 (见 main 里的 gyro 序列, 通过 values[20:23] 传入)
+    # KITTI oxts 官方 dataformat.txt 列定义(0-indexed, 已实测核对 2026-11-19):
+    #   [3:6]   roll/pitch/yaw (rad)
+    #   [17:20] af/al/au 车体系加速度 (m/s², au≈+9.8 含重力 ✓)
+    #   [20:23] wf/wl/wu 原始 OXTS 陀螺仪角速度(rad/s, 绕前/左/上轴; OXTS 车体系 x前y左z上
+    #           与 wx/wy/wz 数值等价, 已验证: vf导数 vs af 相关系数 0.9995, yaw差分 vs wu 0.98)
+    # 早期版本曾误认为 oxts 无陀螺仪并追加 RPY 差分合成值(f[30:33]), 但本函数始终读
+    # f[20:23] 原始列, 合成值从未生效; 已删除合成逻辑(2026-11-19), 与已生成 bag 一致。
     m.linear_acceleration.x, m.linear_acceleration.y, m.linear_acceleration.z = f[14], f[15], f[16]
     m.angular_velocity.x, m.angular_velocity.y, m.angular_velocity.z = f[20], f[21], f[22]
     for arr in (m.orientation_covariance, m.angular_velocity_covariance,
@@ -100,18 +103,6 @@ def imu_msg(values, stamp):
         arr[0] = arr[4] = arr[8] = 1e-2
     return m
 
-
-def build_gyro(rows):
-    """KITTI oxts 无陀螺仪字段, 由 100Hz RPY 差分合成角速度 (rad/s), 50ms 滑动平均去噪。
-    车体系取 x前/y左/z上: wx=d(roll), wy=-d(pitch), wz=d(yaw)。rows: (N,30) oxts 数组。"""
-    dt = 0.01
-    roll, pitch, yaw = rows[:, 3], rows[:, 4], np.unwrap(rows[:, 5])
-
-    def rate(x):
-        k = np.ones(5) / 5.0
-        return np.convolve(np.gradient(x, dt), k, mode='same')
-
-    return np.stack([rate(roll), -rate(pitch), rate(yaw)], axis=1)
 
 
 def main():
@@ -140,7 +131,6 @@ def main():
                 ox_rows.append([float(v) for v in line.split()])
     assert len(ox_rows) == len(ox_ts), f'{len(ox_rows)} oxts rows vs {len(ox_ts)} timestamps'
     ox_rows = np.array(ox_rows)
-    gyro = build_gyro(ox_rows)
 
     # GPS/INS 参考轨迹（仅用于评估，不进入建图）：经纬度 -> 局部 ENU 平面近似
     lat0, lon0 = ox_rows[0, 0], ox_rows[0, 1]
@@ -161,7 +151,7 @@ def main():
         for i, ts in enumerate(ox_ts):
             stamp = parse_ts(ts)
             bag.write(args.topic_imu,
-                      imu_msg(list(ox_rows[i]) + list(gyro[i]), stamp), stamp)
+                      imu_msg(list(ox_rows[i]), stamp), stamp)
         for i, (b, ts) in enumerate(zip(bins, velo_ts)):
             stamp = parse_ts(ts)
             bag.write(args.topic_lidar, velodyne_msg(b, stamp, args.scan_rate), stamp)

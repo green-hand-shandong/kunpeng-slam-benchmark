@@ -21,7 +21,7 @@
 | KISS-ICP | 0.607m | 31ms/帧超实时，pip 即用，0033 漂移 2% 符合纯里程计 |
 | LeGO-LOAM | 1.445m | 弱 IMU 纯几何正常水平 |
 | FAST-LIO2（基线） | 1.958m | 车载首选 |
-| LIO-SAM | 18.1m | 跑通；合成 IMU 与其 9 轴假设差距大（待官方 sample） |
+| LIO-SAM | 18.1m | 跑通；OXTS 原始陀螺仪数据下 yaw 漂移大（外参/配置复查中，见 P0-3） |
 | Cartographer 3D | 24.7m | 车载高速结构性不适配，**6 轮修复实验证据链** |
 
 **模态 C（视觉/VI）**：VINS-Fusion 构建跑通（双目模式初始化成功，1584 帧）——修 6 处 OpenCV4 兼容 + 2 个上游 bug（STEREO 标志恒 false、IMU 未喂入）
@@ -32,7 +32,7 @@
 
 ### 3. 平台化（与实测同步）
 - **评估器**：`evaluator.py`（Umeyama SE(3) 对齐 ATE/RPE），六算法同口径
-- **数据适配层**：`kitti_to_bag.py`（补 ring/time + 100Hz 合成角速度 IMU + 外参求逆）——跨算法复用，是最大的自研点
+- **数据适配层**：`kitti_to_bag.py`（补 ring/time + 100Hz 原始 OXTS IMU（wx/wy/wz 陀螺仪为原始字段，2026-11-19 核实）+ 外参求逆）——跨算法复用，是最大的自研点
 - **一键复现**：4 个 Dockerfile（fastlio/carto/lio-sam/lego）+ 6 个运行脚本 + 全部适配补丁存档
 - **报告页**：`/modality-report` 五模态总览（runs 库实时渲染）
 - **实验库**：SQLite runs 表 20+ 条记录，每条含配置快照/ATE/备注
